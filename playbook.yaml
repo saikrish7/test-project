@@ -1,0 +1,46 @@
+---
+- name: Deploying a web application
+  hosts: localhost
+  gather_facts: False
+  tasks:  
+    - name: Provision of webserver
+      amazon.aws.ec2_instance:
+        name: web-server-sh
+        instance_type: "t2.micro"
+        image_id: "ami-08a0d1e16fc3f61ea"
+        key_name: "shaheda"
+        tags:
+          Name: web-server-tag
+    
+    - name: Provision of database server
+      amazon.aws.ec2_instance:
+        name: database-sh
+        instance_type: "t2.micro"
+        image_id: "ami-08a0d1e16fc3f61ea"
+        key_name: "shaheda"
+        tags:
+          Name: database
+    
+    - name: install the latest version of Apache
+      become: true
+      yum:
+        name: httpd
+        state: latest
+      delegate_to: webinstance
+    
+    - name: Copy file with owner and permissions
+      become: true
+      ansible.builtin.copy:
+        src: "/home/hari/learn/website/"
+        dest: /var/www/html/
+        owner: apache
+        group: apache
+        mode: '0644'
+      delegate_to: webinstance
+    
+    - name: Make sure a service unit is running
+      ansible.builtin.systemd_service:
+        state: started
+        name: httpd
+      delegate_to: webinstance
+
